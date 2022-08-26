@@ -1,0 +1,255 @@
+--DATA EXPLORATION
+--MEXICAN RESTAURANT RATINGS BY REAL CONSUMERS FROM 2012
+--SKILLS USED: OPERATORS,AGGREGATE FUNCTIONS,CONSTRAINTS,AGGREGATION KEYWORDS,JOINS,NESTED QUERIES
+
+
+--CREATED THE 5 TABLES BEFORE IMPORTING THE CSV FILES
+create table consumers
+(Consumer_ID varchar(10) NOT NULL,
+ City varchar(40),
+ State varchar(40),
+ Country varchar(40),
+ Latitude decimal,
+ Longitude decimal,
+ Smoker varchar(5),
+ Drink_Level varchar(40),
+ Transportation_Method varchar(40),
+ Marital_Status varchar(40), 
+ Children varchar(40),
+ Age int,
+ Occupation varchar(40), 
+ Budget varchar(40),
+ PRIMARY KEY (consumer_id)
+);
+
+create table restaurant_cuisines(
+Restaurant_ID int,
+Cuisine varchar(30)
+);
+
+create table consumer_preferences(
+Consumer_ID varchar(10),
+Preferred_Cuisine varchar(30)
+);
+
+create table restaurants(
+Restaurant_ID int PRIMARY KEY,
+Name varchar(60),
+City varchar(40),
+State varchar(40),
+Country varchar(40),
+Zip_Code int,
+Latitude decimal,
+Longitude decimal,
+Alcohol_Service varchar(15),
+Smoking_Allowed	varchar(20),
+Price varchar(10),
+Franchise varchar(10),
+Area varchar(10),
+Parking varchar(10)
+); 
+
+create table ratings(
+Consumer_ID varchar(10),
+Restaurant_ID int,
+Overall_Rating int,
+Food_Rating int,
+Service_Rating int
+);
+
+--CHECK FOR DUPLICATES
+select consumer_id,count(consumer_id)
+from consumers
+group by consumer_id
+having count(consumer_id) >1
+
+	
+--TOTAL NUMBER OF CITIES =4 (cuidad Victoria,Cuernavaca,Juitepec,San Luis Potosi)
+select count(distinct city),city
+from consumers
+group by city
+	
+--TOTAL NUMBER OF STATES =3 (Morelos,San Luis Potosi,Tamaulipas)
+select count(distinct state),state
+from consumers
+group by state
+	
+--TOTAL NUMBER OF COUNTRY =1 (Mexico)
+select country, count(distinct country)
+from consumers
+group by country
+	
+--TOTAL NUMBER OF RESTAURANTS =130
+select count(restaurant_id)
+from restaurants
+	
+--CONSUMERS PROFILE
+	
+--TOTAL NUMBER OF CONSUMERS =138
+select count(Consumer_id)
+from consumers
+	
+--% OF SMOKERS VS. NON-SMOKERS
+--SMOKERS  = 18%
+select smoker,count(smoker)*100/138
+from consumers
+where smoker = 'Yes'
+group by smoker
+--NON-SMOKERS  = 78%
+select smoker,count(smoker)*100/138
+from consumers
+where smoker = 'No'
+group by smoker
+
+--% OF ABSTEMIOUS VS. NON-ABSTEMIOUS CONSUMERS
+--ABSTEMIOUS  = 36%
+select drink_level,count(drink_level)*100/138
+from consumers
+where drink_level = 'Abstemious'
+group by drink_level
+--NON-ABSTEMIOUS =62%
+select drink_level,count(drink_level)*100/138
+from consumers
+where drink_level !='Abstemious'
+group by drink_level
+	
+--% OF MODE OF TRANSPORTATION
+--ON FOOT  =10%
+select transportation_method,count(transportation_method)*100/138
+from consumers
+where transportation_method = 'On Foot'
+group by transportation_method
+--CAR  =25%
+select transportation_method,count(transportation_method)*100/138
+from consumers
+where transportation_method = 'Car'
+group by transportation_method
+-- PUBLIC  =59%
+select transportation_method,count(transportation_method)*100/138
+from consumers
+where transportation_method = 'Public'
+group by transportation_method
+	
+--% OF SINGLE VS. MARRIED
+--SINGLE  =89%
+select count(marital_status)*100/138
+from consumers
+where marital_status = 'Single'
+--MARRIED  =7%	
+select count(marital_status)*100/138
+from consumers
+where marital_status = 'Married'
+	
+--AGE SPLIT (TOTAL CONSUMERS =138)
+--YOUTHS(18-24)  =72%
+select count(age)*100/138
+from consumers
+where age between 18 and 24
+--ADULTS(25-64)  =21%
+select count(age)*100/138
+from consumers
+where age between 25 and 64
+--SENIORS(>65) =6%
+select count(age)*100/138
+from consumers
+where age >65
+	
+--OCCUPATION
+--EMPLOYED  =11%
+select count(occupation)*100/138
+from consumers
+where occupation = 'Employed'
+--UNEMPLOYED  =83%
+select count(occupation)*100/138
+from consumers
+where occupation != 'Employed'
+
+--CONSUMER BUDGET VS. RESTAURANT PRICE
+--CONSUMER BUDGET(TOTAL CONSUMERS =138)
+--HIGH  =3%
+select count(budget)*100/138
+from consumers
+where budget ='High'
+--MEDIUM   =65%
+select count(budget)*100/138
+from consumers
+where budget ='Medium'
+--LOW  =25%
+select count(budget)*100/138
+from consumers
+where budget ='Low'
+--RESTAURANT PRICE (TOTAL RESTAURANT =130)
+--HIGH = 19%
+select count(price)*100/130
+from restaurants
+where price ='High'
+--MEDIUM   =46%
+select count(price)*100/130
+from restaurants
+where price ='Medium'
+--LOW  =34%
+select count(price)*100/130
+from restaurants
+where price ='Low'
+
+--MOST PREFERRED CUISINE BY CONSUMERS    =MEXICAN
+select preferred_cuisine, count(preferred_cuisine)
+from consumer_preferences
+group by preferred_cuisine
+order by count(preferred_cuisine) desc
+	
+--CONSUMER RATINGS
+--BOTTOM 3 RATED RESTAURANTS   = Gordas De Morales,Mikasa, El Lechon Potosino
+select name,restaurant_id
+from restaurants
+where restaurant_id 
+	IN (
+	select restaurant_id
+	from ratings
+	where overall_rating = 0
+	group by restaurant_id 
+	order by count(restaurant_id) asc
+    limit 3
+    )
+	
+--TOP 3 RATED RESTAURANTS  =Puesto De Tacos, La Cantina Restaurante,Tortas Locas Hipocampo
+select name,restaurant_id
+from restaurants
+where restaurant_id 
+	IN (
+	select restaurant_id
+	from ratings
+	where overall_rating = 2
+	group by restaurant_id 
+	order by count(restaurant_id) desc
+    limit 3
+    )
+	
+--LOCATION OF THE TOP RATED RESTAURANT (PUESTO DE TACOS) = San Luis Potosi,Mexico	
+select city,state,country 
+from restaurants
+where name ='Puesto De Tacos'
+	
+--CONSUMERS, THEIR PREFERRED CUISINE AND LOCATION (CITY,STATE)
+select consumers.consumer_id,consumer_preferences.preferred_cuisine,consumers.city,consumers.state
+from consumers
+join consumer_preferences
+on consumers.consumer_id = consumer_preferences.consumer_id
+
+RECOMMENDATIONS
+1. The most preferred Cuisine by consumers appears to be the Mexican cuisine so Maven analytics looking to
+ invest in a restaurant business should do so and include mexican cuisine in the menu which is the most requested for sales and general growth of the business
+2. The location of the proposed restaurant should be accessible to those who ply public transport as they represent majority of consumers
+3. 89% of the total consumers are single so efforts should be made to make the restaurant appealing to married persons as well to drive more sales.
+4. Youths make the majority of consumers as well as medium budget consumers so the prices of the meals
+ should be decided in consideration of the Youths who are mostly students and junior salary earners 
+5. Majority of the consumers are non-abstemious so including a couple of choice drinks to the menu will attract more consumers and make the restaurant their favourite spot
+6. San Luis Potosi, Mexico houses the restaurant with the highest ratings so Maven may consider San Luis as a choice location to establish its business which already has the consumer population/target audience
+	
+	
+	
+	
+	
+	
+	
+	
